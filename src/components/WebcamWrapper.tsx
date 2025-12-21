@@ -1,8 +1,8 @@
 import React, { forwardRef } from 'react';
 
 interface WebcamWrapperProps {
-  videoRef: React.RefObject<HTMLVideoElement>;
-  canvasRef: React.RefObject<HTMLCanvasElement>;
+  videoRef: React.RefObject<HTMLVideoElement | null>;
+  canvasRef: React.RefObject<HTMLCanvasElement | null>;
 }
 
 const WebcamWrapper = forwardRef<HTMLDivElement, WebcamWrapperProps>(
