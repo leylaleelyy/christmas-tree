@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- 定义通用样式：粗黑描边，圆角 -->
+    <style>
+      .outline { stroke: #000; stroke-width: 14px; stroke-linecap: round; stroke-linejoin: round; }
+      .fill-green { fill: #5CB85C; }
+      .fill-red { fill: #FF4D4D; }
+      .fill-yellow { fill: #FDD835; }
+      .fill-blue { fill: #90CAF9; }
+      .fill-brown { fill: #8D6E63; }
+      .fill-dark-green { fill: #7CB342; } /* 左下礼物绿 */
+      .fill-purple { fill: #9575CD; } /* 底部小礼物紫/蓝 */
+    </style>
+  </defs>
+
+  <!-- === 树干 === -->
+  <rect x="236" y="410" width="40" height="70" class="outline fill-brown" />
+
+  <!-- === 礼物盒 (位于树后层) === -->
+  <!-- 左边绿色礼物 -->
+  <rect x="30" y="430" width="70" height="60" class="outline fill-dark-green" />
+  <rect x="20" y="410" width="90" height="20" class="outline fill-dark-green" />
+  
+  <!-- 中间小礼物 (蓝/黄) -->
+  <rect x="110" y="445" width="30" height="45" class="outline fill-blue" /> <!-- 模拟原图紫色/蓝色块 -->
+  <rect x="150" y="445" width="25" height="45" class="outline fill-yellow" /> 
+  <rect x="185" y="445" width="30" height="45" class="outline fill-blue" />
+
+  <!-- === 圣诞树主体 (层层堆叠) === -->
+  <!-- 底层树叶 -->
+  <path d="M130 360 L150 310 L362 310 L382 360 C382 360 350 420 256 420 C162 420 130 360 130 360 Z" class="outline fill-green" />
+  
+  <!-- 中层树叶 -->
+  <path d="M165 250 L180 200 L332 200 L347 250 C347 250 320 310 256 310 C192 310 165 250 165 250 Z" class="outline fill-green" />
+  
+  <!-- 顶层树叶 -->
+  <path d="M256 80 L200 200 C200 200 220 200 256 200 C292 200 312 200 312 200 L256 80 Z" class="outline fill-green" />
+
+  <!-- === 树上的装饰纹理 (黑色短线) === -->
+  <g stroke="#000" stroke-width="12" stroke-linecap="round">
+    <!-- 顶层纹理 -->
+    <line x1="230" y1="140" x2="240" y2="125" />
+    <line x1="280" y1="130" x2="270" y2="145" />
+    <!-- 中层纹理 -->
+    <line x1="210" y1="220" x2="225" y2="235" />
+    <line x1="240" y1="270" x2="255" y2="260" />
+    <line x1="290" y1="260" x2="305" y2="270" />
+    <line x1="315" y1="230" x2="330" y2="245" />
+    <!-- 底层纹理 -->
+    <line x1="170" y1="330" x2="185" y2="345" />
+    <line x1="220" y1="380" x2="235" y2="390" />
+    <line x1="280" y1="380" x2="295" y2="370" />
+    <line x1="330" y1="330" x2="345" y2="320" />
+  </g>
+
+  <!-- === 装饰球 === -->
+  <!-- 红球 -->
+  <circle cx="215" cy="130" r="14" class="outline fill-red" />
+  <circle cx="295" cy="265" r="14" class="outline fill-red" />
+  <circle cx="170" cy="380" r="14" class="outline fill-red" />
+  <!-- 黄球 -->
+  <circle cx="260" cy="175" r="14" class="outline fill-yellow" />
+  <circle cx="170" cy="255" r="14" class="outline fill-yellow" />
+  <circle cx="325" cy="405" r="14" class="outline fill-yellow" />
+  <!-- 蓝球/白球 -->
+  <circle cx="320" cy="155" r="14" class="outline fill-blue" />
+  <circle cx="360" cy="330" r="14" class="outline fill-blue" />
+  <circle cx="210" cy="340" r="14" class="outline fill-blue" />
+
+  <!-- === 顶部星星 === -->
+  <polygon points="256,30 270,65 310,65 280,90 290,125 256,105 222,125 232,90 202,65 242,65" class="outline fill-yellow" />
+
+  <!-- === 右侧红色大礼盒 (位于最前层) === -->
+  <g transform="translate(360, 390)">
+    <!-- 盒子主体 -->
+    <rect x="0" y="20" width="100" height="80" class="outline fill-red" />
+    <!-- 盖子 -->
+    <rect x="-10" y="0" width="120" height="20" class="outline fill-red" />
+    <!-- 黄色丝带 (垂直) -->
+    <rect x="40" y="20" width="20" height="80" class="outline fill-yellow" />
+    <rect x="40" y="0" width="20" height="20" class="outline fill-yellow" />
+    <!-- 蝴蝶结 -->
+    <path d="M50 0 C50 0 20 -30 10 -10 C0 10 40 10 50 5" class="outline fill-yellow" />
+    <path d="M50 0 C50 0 80 -30 90 -10 C100 10 60 10 50 5" class="outline fill-yellow" />
+  </g>
+
+</svg>
