@@ -9,6 +9,16 @@ import { CONFIG, createInitialState } from '../utils/config';
 import { Particle } from '../utils/Particle';
 import type { AppState } from '../types';
 
+// 在文件顶部添加浏览器检测
+const isSafari = (): boolean => {
+    return /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  };
+  
+  const isIOS = (): boolean => {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent);
+  };
+  
+
 export const useChristmasTree = (
   containerRef: React.RefObject<HTMLDivElement | null>,
   videoRef: React.RefObject<HTMLVideoElement | null>,
@@ -52,7 +62,22 @@ export const useChristmasTree = (
   }, []);
 
   const addPhotoToScene = useCallback((texture: THREE.Texture) => {
-    const frameGeo = new THREE.BoxGeometry(1.4, 1.4, 0.05);
+    // 固定照片宽度
+    const photoWidth = 1.2;
+    let photoHeight = 1.2; // 默认正方形
+    
+    // 如果纹理有图片数据，根据宽高比计算高度
+    const image = texture.image as HTMLImageElement | HTMLCanvasElement | ImageBitmap | null;
+    if (image && 'width' in image && 'height' in image && image.width && image.height) {
+      const aspectRatio = image.height / image.width;
+      photoHeight = photoWidth * aspectRatio;
+    }
+    
+    // 框架尺寸：比照片大 0.2（上下各 0.1）
+    const frameWidth = photoWidth + 0.2;
+    const frameHeight = photoHeight + 0.2;
+    
+    const frameGeo = new THREE.BoxGeometry(frameWidth, frameHeight, 0.05);
     const frameMat = new THREE.MeshStandardMaterial({
       color: CONFIG.colors.champagneGold,
       metalness: 1.0,
@@ -60,7 +85,7 @@ export const useChristmasTree = (
     });
     const frame = new THREE.Mesh(frameGeo, frameMat);
 
-    const photoGeo = new THREE.PlaneGeometry(1.2, 1.2);
+    const photoGeo = new THREE.PlaneGeometry(photoWidth, photoHeight);
     const photoMat = new THREE.MeshBasicMaterial({ map: texture });
     const photo = new THREE.Mesh(photoGeo, photoMat);
     photo.position.z = 0.04;
@@ -248,52 +273,132 @@ export const useChristmasTree = (
   const predictWebcam = useCallback(() => {
     const video = videoRef.current;
     const handLandmarker = handLandmarkerRef.current;
-
-    if (video && video.currentTime !== lastVideoTimeRef.current) {
+  
+    if (!video || !handLandmarker) {
+      requestAnimationFrame(predictWebcam);
+      return;
+    }
+  
+    // 确保视频已准备好
+    if (video.readyState < 2) {
+      requestAnimationFrame(predictWebcam);
+      return;
+    }
+  
+    if (video.currentTime !== lastVideoTimeRef.current) {
       lastVideoTimeRef.current = video.currentTime;
-      if (handLandmarker) {
+      try {
         const result = handLandmarker.detectForVideo(video, performance.now());
         processGestures(result);
+      } catch (error) {
+        console.warn('Hand detection error:', error);
       }
     }
+    
     requestAnimationFrame(predictWebcam);
   }, [processGestures, videoRef]);
+  
 
   const initMediaPipe = useCallback(async () => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
-
-    if (!video || !canvas) return;
-
+  
+    if (!video || !canvas) {
+      console.warn('Video or canvas ref not available');
+      return;
+    }
+  
     const ctx = canvas.getContext('2d');
     if (ctx) {
       canvas.width = 160;
       canvas.height = 120;
     }
-
+  
+    // iOS Safari 上 MediaPipe 支持有限，可以选择跳过
+    if (isIOS()) {
+      console.warn('MediaPipe hand tracking may not work well on iOS Safari');
+    }
+  
     try {
       const vision = await FilesetResolver.forVisionTasks(
         'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm'
       );
+  
+      // Safari 和 iOS 使用 CPU delegate
+      const useCPU = isSafari() || isIOS();
+      
       handLandmarkerRef.current = await HandLandmarker.createFromOptions(vision, {
         baseOptions: {
           modelAssetPath:
             'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
-          delegate: 'GPU',
+          delegate: useCPU ? 'CPU' : 'GPU',
         },
         runningMode: 'VIDEO',
         numHands: 1,
       });
-
+  
+      // 获取摄像头
       if (navigator.mediaDevices?.getUserMedia) {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: 'user',
+            width: { ideal: 640, max: 1280 },
+            height: { ideal: 480, max: 720 },
+          },
+          audio: false,
+        });
+  
         video.srcObject = stream;
-        video.addEventListener('loadeddata', predictWebcam);
+        video.muted = true;
+        video.playsInline = true;
+  
+        // 等待视频加载
+        await new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            reject(new Error('Video load timeout'));
+          }, 10000);
+  
+          video.onloadedmetadata = async () => {
+            clearTimeout(timeout);
+            try {
+              await video.play();
+              resolve();
+            } catch (playError) {
+              // Safari 可能需要用户交互才能播放
+              console.warn('Auto-play blocked, waiting for user interaction');
+              
+              const playOnInteraction = async () => {
+                try {
+                  await video.play();
+                  document.removeEventListener('click', playOnInteraction);
+                  document.removeEventListener('touchstart', playOnInteraction);
+                } catch (e) {
+                  console.error('Play failed:', e);
+                }
+              };
+              
+              document.addEventListener('click', playOnInteraction, { once: true });
+              document.addEventListener('touchstart', playOnInteraction, { once: true });
+              resolve();
+            }
+          };
+  
+          video.onerror = () => {
+            clearTimeout(timeout);
+            reject(new Error('Video load error'));
+          };
+        });
+  
+        // 开始预测
+        predictWebcam();
       }
     } catch (error) {
       console.warn('MediaPipe initialization failed:', error);
+      // 静默失败，手势控制不可用但其他功能正常
     }
   }, [canvasRef, predictWebcam, videoRef]);
+  
+  
 
   const animate = useCallback(() => {
     animationIdRef.current = requestAnimationFrame(animate);

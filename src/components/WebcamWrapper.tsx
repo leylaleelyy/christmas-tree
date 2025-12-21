@@ -1,8 +1,8 @@
 import React, { forwardRef } from 'react';
 
 interface WebcamWrapperProps {
-  videoRef: React.RefObject<HTMLVideoElement | null>;
-  canvasRef: React.RefObject<HTMLCanvasElement | null>;
+  videoRef: React.RefObject<HTMLVideoElement>;
+  canvasRef: React.RefObject<HTMLCanvasElement>;
 }
 
 const WebcamWrapper = forwardRef<HTMLDivElement, WebcamWrapperProps>(
@@ -26,6 +26,9 @@ const WebcamWrapper = forwardRef<HTMLDivElement, WebcamWrapperProps>(
           ref={videoRef}
           autoPlay
           playsInline
+          muted
+          // Safari 兼容属性
+          webkit-playsinline="true"
           style={{ display: 'none' }}
         />
         <canvas ref={canvasRef} />
