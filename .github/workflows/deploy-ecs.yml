@@ -1,0 +1,58 @@
+name: Deploy to Aliyun ECS
+
+on:
+  push:
+    branches: ['main']
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 检出代码
+        uses: actions/checkout@v4
+
+      - name: 📦 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 📚 安装依赖
+        run: npm ci
+
+      - name: 🔨 构建项目
+        run: npm run build
+
+      - name: 📦 打包构建产物
+        run: tar -czvf dist.tar.gz -C dist .
+
+      - name: 🔑 配置 SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.ECS_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.ECS_HOST }} >> ~/.ssh/known_hosts
+
+      - name: 📤 上传文件到服务器
+        run: |
+          scp dist.tar.gz ${{ secrets.ECS_USERNAME }}@${{ secrets.ECS_HOST }}:/tmp/
+
+      - name: 🚀 部署到服务器
+        run: |
+          ssh ${{ secrets.ECS_USERNAME }}@${{ secrets.ECS_HOST }} << 'ENDSSH'
+            rm -rf /var/www/html.bak
+            mv /var/www/html /var/www/html.bak 2>/dev/null || true
+            mkdir -p /var/www/html
+            tar -xzvf /tmp/dist.tar.gz -C /var/www/html
+            rm /tmp/dist.tar.gz
+            chown -R www-data:www-data /var/www/html 2>/dev/null || true
+            systemctl reload nginx
+            echo "✅ 部署完成!"
+          ENDSSH
+
+      - name: ✅ 完成
+        run: |
+          echo "🎄 部署成功!"
+          echo "🌐 访问地址: http://${{ secrets.ECS_HOST }}"
