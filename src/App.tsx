@@ -34,6 +34,7 @@ const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+
   return (
     <>
       <style>
@@ -45,6 +46,22 @@ const App: React.FC = () => {
             overflow: hidden;
             background-color: #000000;
             font-family: 'Times New Roman', serif;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            touch-action: manipulation;
+          }
+          
+          * {
+            -webkit-tap-highlight-color: transparent;
+          }
+          
+          @media (max-width: 768px) {
+            body {
+              position: fixed;
+              width: 100%;
+              height: 100%;
+            }
           }
         `}
       </style>
@@ -63,7 +80,11 @@ const App: React.FC = () => {
         }}
       />
 
-      <UILayer onFileUpload={handleFileUpload} controlsHidden={controlsHidden} />
+      <UILayer 
+        onFileUpload={handleFileUpload} 
+        controlsHidden={controlsHidden}
+        onToggleControls={() => setControlsHidden((prev) => !prev)}
+      />
 
       <WebcamWrapper videoRef={videoRef} canvasRef={canvasRef} />
     </>

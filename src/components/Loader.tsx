@@ -1,10 +1,21 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface LoaderProps {
   visible: boolean;
 }
 
 const Loader: React.FC<LoaderProps> = ({ visible }) => {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   if (!visible) return null;
 
   return (
@@ -22,12 +33,14 @@ const Loader: React.FC<LoaderProps> = ({ visible }) => {
         alignItems: 'center',
         justifyContent: 'center',
         transition: 'opacity 0.8s ease-out',
+        padding: isMobile ? '20px' : '0',
+        boxSizing: 'border-box',
       }}
     >
       <div
         style={{
-          width: 40,
-          height: 40,
+          width: isMobile ? 32 : 40,
+          height: isMobile ? 32 : 40,
           border: '1px solid rgba(212, 175, 55, 0.2)',
           borderTop: '1px solid #d4af37',
           borderRadius: '50%',
@@ -37,11 +50,13 @@ const Loader: React.FC<LoaderProps> = ({ visible }) => {
       <div
         style={{
           color: '#d4af37',
-          fontSize: 14,
-          letterSpacing: 4,
-          marginTop: 20,
+          fontSize: isMobile ? 11 : 14,
+          letterSpacing: isMobile ? 2 : 4,
+          marginTop: isMobile ? 16 : 20,
           textTransform: 'uppercase',
           fontWeight: 100,
+          textAlign: 'center',
+          padding: isMobile ? '0 20px' : '0',
         }}
       >
         Loading Holiday Magic
