@@ -1,22 +1,34 @@
 // src/services/qiniuService.ts
 
-export interface QiniuPhoto {
+const API_URL = 'https://photos.leylalee.xyz';
+
+export interface Photo {
   id: string;
   key: string;
   url: string;
 }
 
-// 替换为你的 Worker 地址
-const API_URL = 'https://photo-uploader.yue181105.workers.dev';
-
 class QiniuService {
-  async getPhotos(): Promise<QiniuPhoto[]> {
+  async getPhotos(folder: string = 'christmas-tree'): Promise<Photo[]> {
     try {
-      const res = await fetch(`${API_URL}/api/photos?folder=christmas-tree&t=${Date.now()}`);
+      const res = await fetch(
+        `${API_URL}/api/photos?folder=${folder}&t=${Date.now()}`,
+        {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          },
+        }
+      );
+      
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      
       const data = await res.json();
       return data.photos || [];
-    } catch (e) {
-      console.error('Failed to fetch photos:', e);
+    } catch (error) {
+      console.error('Failed to fetch photos:', error);
       return [];
     }
   }
