@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 1200px;
+      height: 630px;
+      background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #0f0f23 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    /* 星星背景 */
+    .stars {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        radial-gradient(2px 2px at 20px 30px, #fff, transparent),
+        radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.8), transparent),
+        radial-gradient(1px 1px at 90px 40px, #fff, transparent),
+        radial-gradient(2px 2px at 160px 120px, rgba(255,255,255,0.9), transparent),
+        radial-gradient(1px 1px at 230px 80px, #fff, transparent),
+        radial-gradient(2px 2px at 300px 150px, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 400px 60px, #fff, transparent),
+        radial-gradient(2px 2px at 500px 180px, rgba(255,255,255,0.8), transparent),
+        radial-gradient(1px 1px at 600px 100px, #fff, transparent),
+        radial-gradient(2px 2px at 700px 50px, rgba(255,255,255,0.9), transparent),
+        radial-gradient(1px 1px at 800px 200px, #fff, transparent),
+        radial-gradient(2px 2px at 900px 80px, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 1000px 150px, #fff, transparent),
+        radial-gradient(2px 2px at 1100px 30px, rgba(255,255,255,0.8), transparent);
+      opacity: 0.6;
+    }
+    
+    /* 圣诞树 emoji */
+    .tree {
+      font-size: 180px;
+      margin-bottom: 20px;
+      filter: drop-shadow(0 0 30px rgba(0, 255, 100, 0.5));
+      animation: glow 2s ease-in-out infinite alternate;
+    }
+    
+    @keyframes glow {
+      from { filter: drop-shadow(0 0 20px rgba(0, 255, 100, 0.3)); }
+      to { filter: drop-shadow(0 0 40px rgba(0, 255, 100, 0.6)); }
+    }
+    
+    .title {
+      font-size: 72px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #ffd700 0%, #ffed4a 50%, #ffd700 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 60px rgba(255, 215, 0, 0.5);
+      letter-spacing: 4px;
+      margin-bottom: 16px;
+    }
+    
+    .subtitle {
+      font-size: 28px;
+      color: rgba(255, 255, 255, 0.8);
+      letter-spacing: 2px;
+      font-weight: 300;
+    }
+    
+    /* 装饰球 */
+    .ornament {
+      position: absolute;
+      border-radius: 50%;
+      opacity: 0.6;
+    }
+    .ornament-1 {
+      width: 60px; height: 60px;
+      background: radial-gradient(circle at 30% 30%, #ff6b6b, #c0392b);
+      top: 80px; left: 100px;
+    }
+    .ornament-2 {
+      width: 40px; height: 40px;
+      background: radial-gradient(circle at 30% 30%, #ffd700, #f39c12);
+      top: 150px; right: 150px;
+    }
+    .ornament-3 {
+      width: 50px; height: 50px;
+      background: radial-gradient(circle at 30% 30%, #3498db, #2980b9);
+      bottom: 120px; left: 180px;
+    }
+    .ornament-4 {
+      width: 45px; height: 45px;
+      background: radial-gradient(circle at 30% 30%, #2ecc71, #27ae60);
+      bottom: 80px; right: 120px;
+    }
+  </style>
+</head>
+<body>
+  <div class="stars"></div>
+  <div class="ornament ornament-1"></div>
+  <div class="ornament ornament-2"></div>
+  <div class="ornament ornament-3"></div>
+  <div class="ornament ornament-4"></div>
+  
+  <div class="tree">🎄</div>
+  <div class="title">Merry Christmas</div>
+  <div class="subtitle">✨ 一棵充满回忆的互动圣诞树 ✨</div>
+</body>
+</html>
