@@ -70,12 +70,6 @@ const UILayer: React.FC<UILayerProps> = ({ onFileUpload, controlsHidden, onToggl
             onToggleControls();
           }
         }}
-        onTouchStart={(e) => {
-          if (isMobile && onToggleControls) {
-            e.stopPropagation();
-            onToggleControls();
-          }
-        }}
       >
         Merry Christmas
       </h1>

@@ -10,6 +10,20 @@ import { Particle } from '../utils/Particle';
 import type { AppState } from '../types';
 import { useQiniuPhotos } from './useQiniuPhotos';
 
+// 本地默认照片资源（随机使用）
+const DEFAULT_PHOTO_URLS: string[] = [
+  new URL('../assets/tree1.jpg', import.meta.url).href,
+  new URL('../assets/tree2.jpg', import.meta.url).href,
+  new URL('../assets/tree3.jpg', import.meta.url).href,
+  new URL('../assets/tree4.jpg', import.meta.url).href,
+  new URL('../assets/tree5.jpg', import.meta.url).href,
+  new URL('../assets/tree6.jpg', import.meta.url).href,
+  new URL('../assets/tree7.jpg', import.meta.url).href,
+  new URL('../assets/tree8.jpg', import.meta.url).href,
+  new URL('../assets/tree9.jpg', import.meta.url).href,
+  new URL('../assets/tree10.jpg', import.meta.url).href,
+];
+
 // 在文件顶部添加浏览器检测
 const isSafari = (): boolean => {
     return /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
@@ -46,8 +60,8 @@ export const useChristmasTree = (
   
     // 记录已加载的照片
     const loadedPhotosRef = useRef<Set<string>>(new Set());
-    // 记录是否已创建默认占位图
-    const defaultPhotoCreatedRef = useRef<boolean>(false);
+  // 记录已添加的默认占位图数量
+  const defaultPlaceholderCountRef = useRef<number>(0);
 
   const createTextures = useCallback(() => {
     const canvas = document.createElement('canvas');
@@ -112,270 +126,67 @@ export const useChristmasTree = (
     particleSystemRef.current.push(new Particle(group, 'PHOTO', false));
   }, []);
 
-  const drawChristmasTree = (ctx: CanvasRenderingContext2D, x: number, y: number, size: number) => {
-    // 树干
-    ctx.fillStyle = '#8B4513';
-    ctx.fillRect(x - size * 0.1, y + size * 0.3, size * 0.2, size * 0.2);
-    
-    // 树层（从下往上）
-    ctx.fillStyle = '#228B22';
-    const layers = 4;
-    for (let i = 0; i < layers; i++) {
-      const layerY = y - size * 0.1 + i * size * 0.15;
-      const layerWidth = size * (0.9 - i * 0.15);
-      const layerHeight = size * 0.15;
-      ctx.beginPath();
-      ctx.moveTo(x, layerY);
-      ctx.lineTo(x - layerWidth / 2, layerY + layerHeight);
-      ctx.lineTo(x + layerWidth / 2, layerY + layerHeight);
-      ctx.closePath();
-      ctx.fill();
+
+  const createDefaultPhotos = useCallback((count: number = 1) => {
+    const loader = new THREE.TextureLoader();
+
+    // 作为兜底的本地图形生成
+    const createFallbackCanvas = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d')!;
+      
+      // 背景
+      ctx.fillStyle = '#050505';
+      ctx.fillRect(0, 0, 512, 512);
+      
+      // 金色边框
+      ctx.strokeStyle = '#eebb66';
+      ctx.lineWidth = 15;
+      ctx.strokeRect(20, 20, 472, 472);
+
+      // 简单的居中文本作为兜底
+      ctx.font = '700 72px Cinzel, Times New Roman, serif';
+      ctx.fillStyle = '#eebb66';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('MERRY', 256, 230);
+      ctx.fillText('CHRISTMAS', 256, 310);
+  
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      addPhotoToScene(tex);
+    };
+
+    if (!DEFAULT_PHOTO_URLS.length) {
+      createFallbackCanvas();
+      defaultPlaceholderCountRef.current += count;
+      return;
     }
-    
-    // 星星
-    ctx.fillStyle = '#FFD700';
-    ctx.beginPath();
-    const starSize = size * 0.15;
-    for (let i = 0; i < 5; i++) {
-      const angle = (i * 4 * Math.PI) / 5 - Math.PI / 2;
-      const px = x + Math.cos(angle) * starSize;
-      const py = y - size * 0.35 + Math.sin(angle) * starSize;
-      if (i === 0) ctx.moveTo(px, py);
-      else ctx.lineTo(px, py);
+
+    for (let i = 0; i < count; i++) {
+      const randomUrl = DEFAULT_PHOTO_URLS[Math.floor(Math.random() * DEFAULT_PHOTO_URLS.length)];
+      loader.load(
+        randomUrl,
+        (tex) => {
+          tex.colorSpace = THREE.SRGBColorSpace;
+          addPhotoToScene(tex);
+          defaultPlaceholderCountRef.current += 1;
+        },
+        undefined,
+        (err) => {
+          console.warn('Load default photo failed:', err);
+          createFallbackCanvas();
+          defaultPlaceholderCountRef.current += 1;
+        }
+      );
     }
-    ctx.closePath();
-    ctx.fill();
-    
-    // 装饰球
-    const decorations = [
-      { x: x - size * 0.2, y: y - size * 0.05, color: '#FF0000' },
-      { x: x + size * 0.2, y: y, color: '#0000FF' },
-      { x: x - size * 0.15, y: y + size * 0.1, color: '#FFFF00' },
-    ];
-    decorations.forEach(d => {
-      ctx.fillStyle = d.color;
-      ctx.beginPath();
-      ctx.arc(d.x, d.y, size * 0.05, 0, Math.PI * 2);
-      ctx.fill();
-    });
-  };
-
-  const drawChristmasSock = (ctx: CanvasRenderingContext2D, x: number, y: number, size: number) => {
-    // 袜子主体
-    ctx.fillStyle = '#FF0000';
-    ctx.beginPath();
-    ctx.ellipse(x, y, size * 0.25, size * 0.4, 0, 0, Math.PI * 2);
-    ctx.fill();
-    
-    // 袜子顶部（白色）
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(x - size * 0.25, y - size * 0.4, size * 0.5, size * 0.15);
-    
-    // 装饰条纹
-    ctx.strokeStyle = '#FFFFFF';
-    ctx.lineWidth = size * 0.03;
-    ctx.beginPath();
-    ctx.moveTo(x - size * 0.2, y - size * 0.1);
-    ctx.lineTo(x + size * 0.2, y - size * 0.1);
-    ctx.stroke();
-    
-    // 小星星装饰
-    ctx.fillStyle = '#FFD700';
-    ctx.beginPath();
-    const starSize = size * 0.08;
-    for (let i = 0; i < 5; i++) {
-      const angle = (i * 4 * Math.PI) / 5 - Math.PI / 2;
-      const px = x + Math.cos(angle) * starSize;
-      const py = y + size * 0.1 + Math.sin(angle) * starSize;
-      if (i === 0) ctx.moveTo(px, py);
-      else ctx.lineTo(px, py);
-    }
-    ctx.closePath();
-    ctx.fill();
-  };
-
-  const drawSanta = (ctx: CanvasRenderingContext2D, x: number, y: number, size: number) => {
-    // 身体（红色）
-    ctx.fillStyle = '#FF0000';
-    ctx.beginPath();
-    ctx.ellipse(x, y + size * 0.15, size * 0.3, size * 0.35, 0, 0, Math.PI * 2);
-    ctx.fill();
-    
-    // 头部（肉色）
-    ctx.fillStyle = '#FFDBAC';
-    ctx.beginPath();
-    ctx.arc(x, y - size * 0.1, size * 0.2, 0, Math.PI * 2);
-    ctx.fill();
-    
-    // 帽子
-    ctx.fillStyle = '#FF0000';
-    ctx.beginPath();
-    ctx.arc(x, y - size * 0.2, size * 0.18, Math.PI, 0, false);
-    ctx.fill();
-    ctx.fillRect(x - size * 0.18, y - size * 0.2, size * 0.36, size * 0.1);
-    
-    // 帽子白边
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(x - size * 0.18, y - size * 0.15, size * 0.36, size * 0.05);
-    
-    // 帽子球
-    ctx.fillStyle = '#FFFFFF';
-    ctx.beginPath();
-    ctx.arc(x, y - size * 0.25, size * 0.05, 0, Math.PI * 2);
-    ctx.fill();
-    
-    // 眼睛
-    ctx.fillStyle = '#000000';
-    ctx.beginPath();
-    ctx.arc(x - size * 0.05, y - size * 0.1, size * 0.02, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(x + size * 0.05, y - size * 0.1, size * 0.02, 0, Math.PI * 2);
-    ctx.fill();
-    
-    // 胡子
-    ctx.strokeStyle = '#FFFFFF';
-    ctx.lineWidth = size * 0.03;
-    ctx.beginPath();
-    ctx.arc(x, y - size * 0.05, size * 0.1, 0, Math.PI);
-    ctx.stroke();
-    
-    // 腰带
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(x - size * 0.25, y + size * 0.1, size * 0.5, size * 0.05);
-  };
-
-  const drawReindeer = (ctx: CanvasRenderingContext2D, x: number, y: number, size: number) => {
-    // 身体（棕色）
-    ctx.fillStyle = '#8B4513';
-    ctx.beginPath();
-    ctx.ellipse(x, y + size * 0.1, size * 0.35, size * 0.25, 0, 0, Math.PI * 2);
-    ctx.fill();
-    
-    // 头部
-    ctx.fillStyle = '#8B4513';
-    ctx.beginPath();
-    ctx.ellipse(x - size * 0.15, y - size * 0.1, size * 0.2, size * 0.15, -0.3, 0, Math.PI * 2);
-    ctx.fill();
-    
-    // 角
-    ctx.strokeStyle = '#654321';
-    ctx.lineWidth = size * 0.03;
-    ctx.beginPath();
-    ctx.moveTo(x - size * 0.2, y - size * 0.2);
-    ctx.lineTo(x - size * 0.25, y - size * 0.35);
-    ctx.lineTo(x - size * 0.15, y - size * 0.3);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(x - size * 0.15, y - size * 0.2);
-    ctx.lineTo(x - size * 0.2, y - size * 0.35);
-    ctx.lineTo(x - size * 0.1, y - size * 0.3);
-    ctx.stroke();
-    
-    // 眼睛
-    ctx.fillStyle = '#000000';
-    ctx.beginPath();
-    ctx.arc(x - size * 0.2, y - size * 0.12, size * 0.02, 0, Math.PI * 2);
-    ctx.fill();
-    
-    // 鼻子（红色）
-    ctx.fillStyle = '#FF0000';
-    ctx.beginPath();
-    ctx.arc(x - size * 0.25, y - size * 0.08, size * 0.03, 0, Math.PI * 2);
-    ctx.fill();
-    
-    // 腿
-    ctx.fillStyle = '#8B4513';
-    const legs = [
-      { x: x - size * 0.2, y: y + size * 0.3 },
-      { x: x + size * 0.2, y: y + size * 0.3 },
-    ];
-    legs.forEach(leg => {
-      ctx.fillRect(leg.x - size * 0.04, leg.y, size * 0.08, size * 0.15);
-    });
-  };
-
-  const drawSnowman = (ctx: CanvasRenderingContext2D, x: number, y: number, size: number) => {
-    // 底部雪球
-    ctx.fillStyle = '#FFFFFF';
-    ctx.beginPath();
-    ctx.arc(x, y + size * 0.2, size * 0.25, 0, Math.PI * 2);
-    ctx.fill();
-    
-    // 中间雪球
-    ctx.beginPath();
-    ctx.arc(x, y, size * 0.2, 0, Math.PI * 2);
-    ctx.fill();
-    
-    // 头部
-    ctx.beginPath();
-    ctx.arc(x, y - size * 0.2, size * 0.15, 0, Math.PI * 2);
-    ctx.fill();
-    
-    // 眼睛
-    ctx.fillStyle = '#000000';
-    ctx.beginPath();
-    ctx.arc(x - size * 0.05, y - size * 0.22, size * 0.02, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(x + size * 0.05, y - size * 0.22, size * 0.02, 0, Math.PI * 2);
-    ctx.fill();
-    
-    // 鼻子（胡萝卜）
-    ctx.fillStyle = '#FF8C00';
-    ctx.beginPath();
-    ctx.moveTo(x, y - size * 0.2);
-    ctx.lineTo(x, y - size * 0.15);
-    ctx.lineTo(x + size * 0.03, y - size * 0.17);
-    ctx.closePath();
-    ctx.fill();
-    
-    // 帽子
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(x - size * 0.12, y - size * 0.3, size * 0.24, size * 0.05);
-    ctx.beginPath();
-    ctx.arc(x, y - size * 0.3, size * 0.12, Math.PI, 0, false);
-    ctx.fill();
-    
-    // 围巾
-    ctx.fillStyle = '#FF0000';
-    ctx.fillRect(x - size * 0.15, y - size * 0.1, size * 0.3, size * 0.05);
-  };
-
-  const createDefaultPhotos = useCallback(() => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 512;
-    const ctx = canvas.getContext('2d')!;
-    
-    // 背景
-    ctx.fillStyle = '#050505';
-    ctx.fillRect(0, 0, 512, 512);
-    
-    // 金色边框
-    ctx.strokeStyle = '#eebb66';
-    ctx.lineWidth = 15;
-    ctx.strokeRect(20, 20, 472, 472);
-    
-    // 随机选择一个圣诞元素绘制
-    const elements = [
-      () => drawChristmasTree(ctx, 256, 300, 200),
-      () => drawChristmasSock(ctx, 256, 256, 200),
-      () => drawSanta(ctx, 256, 280, 200),
-      () => drawReindeer(ctx, 256, 280, 200),
-      () => drawSnowman(ctx, 256, 300, 200),
-    ];
-    
-    const randomElement = elements[Math.floor(Math.random() * elements.length)];
-    randomElement();
-
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    addPhotoToScene(tex);
   }, [addPhotoToScene]);
 
+  // 加载远端照片
   useEffect(() => {
-    if (photosLoading || !qiniuPhotos.length) return;
+    if (photosLoading) return;
     if (!mainGroupRef.current) return;
 
     qiniuPhotos.forEach((photo) => {
@@ -400,16 +211,20 @@ export const useChristmasTree = (
     });
   }, [qiniuPhotos, photosLoading, addPhotoToScene]);
 
-  // 当没有照片时，创建默认占位图
+  // 当可渲染照片少于 5 张时，补充默认占位图
   useEffect(() => {
     if (photosLoading) return;
     if (!mainGroupRef.current) return;
-    if (qiniuPhotos.length > 0) return; // 有照片时不创建占位图
-    if (defaultPhotoCreatedRef.current) return; // 已经创建过占位图
 
-    defaultPhotoCreatedRef.current = true;
-    createDefaultPhotos();
-  }, [photosLoading, qiniuPhotos, createDefaultPhotos]);
+    const remoteCount = loadedPhotosRef.current.size;
+    const placeholderCount = defaultPlaceholderCountRef.current;
+    const total = remoteCount + placeholderCount;
+
+    if (total >= 5) return;
+
+    const need = 5 - total;
+    createDefaultPhotos(need);
+  }, [photosLoading, createDefaultPhotos]);
 
   const createParticles = useCallback(() => {
     const mainGroup = mainGroupRef.current!;
@@ -666,14 +481,12 @@ export const useChristmasTree = (
                 try {
                   await video.play();
                   document.removeEventListener('click', playOnInteraction);
-                  document.removeEventListener('touchstart', playOnInteraction);
                 } catch (e) {
                   console.error('Play failed:', e);
                 }
               };
               
               document.addEventListener('click', playOnInteraction, { once: true });
-              document.addEventListener('touchstart', playOnInteraction, { once: true });
               resolve();
             }
           };
@@ -758,8 +571,13 @@ export const useChristmasTree = (
 
     if (!renderer || !camera || !scene || !mainGroup) return;
 
+    // 防重复触发（移动端可能触发双击/双派发）
+    const now = Date.now();
+    if (now - lastClickTimeRef.current < 300) {
+      return;
+    }
     // 记录点击时间，用于优先处理点击事件
-    lastClickTimeRef.current = Date.now();
+    lastClickTimeRef.current = now;
 
     // 阻止事件冒泡，避免触发其他点击处理
     event.stopPropagation();
@@ -943,7 +761,6 @@ export const useChristmasTree = (
     // 添加点击事件监听（点击照片放大）
     const rendererDom = renderer.domElement;
     rendererDom.addEventListener('click', handleClick);
-    rendererDom.addEventListener('touchend', handleClick);
 
     // Start animation
     animate();
@@ -951,7 +768,6 @@ export const useChristmasTree = (
     return () => {
       window.removeEventListener('resize', handleResize);
       rendererDom.removeEventListener('click', handleClick);
-      rendererDom.removeEventListener('touchend', handleClick);
       cancelAnimationFrame(animationIdRef.current);
       renderer.dispose();
       container.removeChild(renderer.domElement);
