@@ -65,21 +65,6 @@ export const useChristmasTree = (
   // 记录已添加的默认占位图数量
   const defaultPlaceholderCountRef = useRef<number>(0);
 
-  // 通过 fetch + createImageBitmap 全量下载再创建纹理，避免半成品渲染
-  const loadTextureFully = useCallback(async (url: string): Promise<THREE.Texture> => {
-    const res = await fetch(url, { mode: 'cors' });
-    if (!res.ok) {
-      throw new Error(`Failed to fetch image: ${res.status}`);
-    }
-    const blob = await res.blob();
-    const bitmap = await createImageBitmap(blob);
-    const tex = new THREE.Texture(bitmap);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    tex.flipY = true; // 与 Three.js 默认 UV 对齐
-    tex.needsUpdate = true;
-    return tex;
-  }, []);
-
   const createTextures = useCallback(() => {
     const canvas = document.createElement('canvas');
     canvas.width = 128;
@@ -201,7 +186,35 @@ export const useChristmasTree = (
     }
   }, [addPhotoToScene]);
 
-  // 预加载远端照片，确保完整加载后再添加到场景，避免空白
+  // 预加载远端照片，确保方向正确
+const loadTextureFully = useCallback(async (url: string): Promise<THREE.Texture> => {
+    return new Promise((resolve, reject) => {
+      const loader = new THREE.TextureLoader();
+      loader.crossOrigin = 'anonymous';
+      
+      // 添加超时处理
+      const timeout = setTimeout(() => {
+        reject(new Error('Load timeout'));
+      }, 15000);
+      
+      loader.load(
+        url,
+        (tex) => {
+          clearTimeout(timeout);
+          tex.colorSpace = THREE.SRGBColorSpace;
+          resolve(tex);
+        },
+        undefined,
+        (err) => {
+          clearTimeout(timeout);
+          reject(err);
+        }
+      );
+    });
+  }, []);
+  
+
+  // 预加载远端照片，加载完成后再添加到场景，避免空白
   useEffect(() => {
     if (photosLoading) return;
     if (!mainGroupRef.current) return;
@@ -222,8 +235,8 @@ export const useChristmasTree = (
       });
 
     if (loadTasks.length) {
-      Promise.allSettled(loadTasks).catch(() => {
-        /* swallow errors */
+      Promise.allSettled(loadTasks).then(() => {
+        // no-op, just ensure errors are swallowed
       });
     }
   }, [qiniuPhotos, photosLoading, addPhotoToScene, loadTextureFully]);
