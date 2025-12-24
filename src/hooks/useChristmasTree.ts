@@ -60,6 +60,8 @@ export const useChristmasTree = (
   
     // 记录已加载的照片
     const loadedPhotosRef = useRef<Set<string>>(new Set());
+  // 预加载纹理缓存，避免渲染空白
+  const preloadedTexturesRef = useRef<Map<string, THREE.Texture>>(new Map());
   // 记录已添加的默认占位图数量
   const defaultPlaceholderCountRef = useRef<number>(0);
 
@@ -184,31 +186,35 @@ export const useChristmasTree = (
     }
   }, [addPhotoToScene]);
 
-  // 加载远端照片
+  // 预加载远端照片，加载完成后再添加到场景，避免空白
   useEffect(() => {
     if (photosLoading) return;
     if (!mainGroupRef.current) return;
 
-    qiniuPhotos.forEach((photo) => {
-      if (loadedPhotosRef.current.has(photo.id)) return;
-      loadedPhotosRef.current.add(photo.id);
+    const loader = new THREE.TextureLoader();
+    loader.crossOrigin = 'anonymous';
 
-      const loader = new THREE.TextureLoader();
-      loader.crossOrigin = 'anonymous';
-      
-      loader.load(
-        photo.url,
-        (texture) => {
-          texture.colorSpace = THREE.SRGBColorSpace;
-          addPhotoToScene(texture);
-        },
-        undefined,
-        (err) => {
+    const loadTasks = qiniuPhotos
+      .filter((photo) => !loadedPhotosRef.current.has(photo.id) && !preloadedTexturesRef.current.has(photo.id))
+      .map(async (photo) => {
+        try {
+          const tex = await loader.loadAsync(photo.url);
+          tex.colorSpace = THREE.SRGBColorSpace;
+          preloadedTexturesRef.current.set(photo.id, tex);
+          loadedPhotosRef.current.add(photo.id);
+          addPhotoToScene(tex);
+        } catch (err) {
           console.warn('Load failed:', photo.url, err);
+          preloadedTexturesRef.current.delete(photo.id);
           loadedPhotosRef.current.delete(photo.id);
         }
-      );
-    });
+      });
+
+    if (loadTasks.length) {
+      Promise.allSettled(loadTasks).then(() => {
+        // no-op, just ensure errors are swallowed
+      });
+    }
   }, [qiniuPhotos, photosLoading, addPhotoToScene]);
 
   // 当可渲染照片少于 5 张时，补充默认占位图
